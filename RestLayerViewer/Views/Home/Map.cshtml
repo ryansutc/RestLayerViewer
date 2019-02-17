@@ -1,0 +1,49 @@
+﻿
+@{
+    ViewData["Title"] = "View";
+}
+
+<h2>View</h2>
+<p style="display:none" id="serviceUrlStore">@ViewData["serviceUrl"]</p>
+<p>ServiceUrl: @ViewData["serviceUrl"]</p>
+<p>Use this area to provide additional information.</p>
+
+<!--Wrapper-->
+<div class="wrapper" id="bigbox">
+    <section id="main" class="inner">
+        <h2 class="major">
+            Map Title Here
+        </h2>
+        <div id="map"></div>
+        <div id="gridholder">
+            <div id="grid"></div>
+        </div>
+
+        <div id="maptextbox" class="random" style="display:none">
+            <button class="button small pull-right" id="Next" hidden>Next</button>
+            <div>
+                <ul class="cityname alt" style="vertical-align: bottom"></ul>
+            </div>
+        </div>
+      
+
+    </section>
+</div>
+
+@section Scripts{
+
+    <script>
+        window.onload = function () {
+            var fieldList = allFieldsString.split(","); //actually just get selected fields
+
+            require([
+                'map/mymap'
+            ], function (mymap) {
+                var mymap = new mymap(serviceUrl, fieldList);
+                mymap.loadMap()
+
+            });
+        }
+
+    </script>
+}

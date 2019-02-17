@@ -1,0 +1,34 @@
+﻿
+@{
+    ViewData["Title"] = "View";
+}
+<script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.noStyle.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/ag-grid-community/dist/styles/ag-grid.css">
+<link rel="stylesheet" href="https://unpkg.com/ag-grid-community/dist/styles/ag-theme-balham.css">
+
+<h2>View</h2>
+<p style="display:none" id="serviceUrlStore">@ViewData["serviceUrl"]</p>
+<p>ServiceUrl: @ViewData["serviceUrl"]</p>
+<p>Use this area to provide additional information.</p>
+
+<div id="myGrid" class="ag-theme-balham"></div>
+<!--Grid will go here-->
+</div>
+
+@section Scripts{
+    <script type="text/javascript">
+        var packagePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+        var dojoConfig = {
+            packages: [{
+                name: "custom",
+                location: packagePath + '/js/custom'
+            }]
+        };
+    </script>
+    <script src="https://js.arcgis.com/4.10/"></script>
+
+
+    <script>
+        
+    </script>
+}

@@ -1,0 +1,72 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <h2>View your ArcGIS REST Feature Services Data</h2>
+        <ul>
+            <li>view the data in a data table </li>
+            <li>View the data in an interactive map</li>
+        </ul>
+    </div>
+    <div class="col-md-8">
+        <form method="post">
+            <div class="form-group">
+                <label for="serviceUrl">Service URL:</label>
+                <input class="form-control" id="serviceUrl" name="serviceUrl" aria-label="Service URL" value="@ViewData["serviceUrl"]"
+                       placeholder="Enter a feature service layer url like: https://sampleserver3.arcgisonline.com/ArcGIS/rest/services/BloomfieldHillsMichigan/LandusePlanning/FeatureServer/0" />
+                <small class="form-error-msg text-danger" id="serviceUrlError"><span class="glyphicon glyphicon-warning-sign"></span></small>
+            </div>
+            <div class="form-group" id="fieldsGroup">
+                <label for="filterFields">
+                    Fields
+                    <small><a class="active" id="filterFields">(filter)</a></small>
+                </label>
+                <small class="form-error-msg text-danger" id="filterFieldsError">
+                    <span class="glyphicon glyphicon-warning-sign"></span>
+                </small>
+                <p class="small" id="selectedFields" name="selectedFields"></p>
+                <input class="form-control" id="allFields" aria-hidden="true" value="@ViewData["allFieldsString"]"
+                       name="allFields" type="hidden" />
+                <input class="form-control" id="selectedState" aria-hidden="true" value="@ViewData["selectedState"]"
+                       name="selectedState" type="hidden" />
+            </div>
+            <div class="form-group" id="GoGroup">
+                <button class="btn btn-default" id="showDataBtn" disabled>Show Data</button>
+                <small class="form-error-msg text-danger" id="showDataBtnError">
+                    <span class="glyphicon glyphicon-warning-sign"></span> Something went wrong
+                </small>
+            </div>
+            <!-- start modal element-->
+            <div id="fieldsModal" class="modal fade">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal">x</button>
+                            <h4 class="modal-title">Limit fields included in viewer</h4>
+                            <p>Will show only included fields</p>
+                            <p><small class="text-info" id="filterStatus">fields here</small></p>
+                        </div>
+                        <div class="modal-body" id="content-wrapper">
+                            <div id="content">
+                                <div id="includeFields"></div>
+                                <div id="excludeFields"</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- end modal element-->
+        </form>
+    </div>
+</div>
+
+@section Scripts{
+    <script>
+
+    </script>
+    
+
+
+}
