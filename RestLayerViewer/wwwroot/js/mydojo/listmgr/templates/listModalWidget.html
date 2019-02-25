@@ -1,0 +1,19 @@
+﻿<div id="${baseClass}${oid}" class="modal fade in" role="dialog" style="display: none; padding-right: 17px;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" id="modalFieldclose" data-dismiss="modal" data-dojo-attach-event="ondijitclick:_close">x</button>
+                <h4 class="modal-title">${title}</h4>
+                <p>${msg}</p>
+            </div>
+            <div class="modal-body" id="content-wrapper" data-dojo-attach-event="ondijitclick:_onGo">
+                <div class="contentModalWidget">
+                    <div id="includeItems${oid}" data-dojo-attach-point="includeItems" class="includeItems" 
+                         data-dojo-attach-event="ondijitclick:_fldKeywordClick"></div>
+                    <div id="excludeItems${oid}" data-dojo-attach-point="excludeItems" class="excludeItems" 
+                         data-dojo-attach-event="ondijitclick:_fldKeywordClick"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
