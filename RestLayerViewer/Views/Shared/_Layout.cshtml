@@ -9,6 +9,7 @@
         <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
         <link rel="stylesheet" href="https://js.arcgis.com/4.10/esri/css/main.css">
         <link rel="stylesheet" href="~/css/site.css" />
+        @RenderSection("Styles", false)
     </environment>
     <environment exclude="Development">
         <link rel="stylesheet" href="https://ajax.aspnetcdn.com/ajax/bootstrap/3.3.7/css/bootstrap.min.css"
@@ -16,6 +17,7 @@
               asp-fallback-test-class="sr-only" asp-fallback-test-property="position" asp-fallback-test-value="absolute" />
         <link rel="stylesheet" href="https://js.arcgis.com/4.10/esri/css/main.css">
         <link rel="stylesheet" href="~/css/site.min.css" asp-append-version="true" />
+        @RenderSection("Styles", false)
     </environment>
 </head>
 <body>
@@ -59,9 +61,18 @@
                 {
                     name: "map",
                     location: packagePath + '/js/mydojo/map'
+                },
+                {
+                    name: "listmgr",
+                    location: packagePath + '/js/mydojo/listmgr'
+                },
+                {
+                    name: "datagrid",
+                    location: packagePath + '/js/mydojo/datagrid'
                 }
             ],
-            paths: {map: packagePath + '/js/mydojo/map'}
+            paths: { map: packagePath + '/js/mydojo/map' },
+            cacheBust: true
         };
 
         

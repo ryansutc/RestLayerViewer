@@ -6,13 +6,13 @@
 <h2>View</h2>
 <p style="display:none" id="serviceUrlStore">@ViewData["serviceUrl"]</p>
 <p>ServiceUrl: @ViewData["serviceUrl"]</p>
-<p>Use this area to provide additional information.</p>
+<p>Add a feature layer REST url to see data in this map.</p>
 
 <!--Wrapper-->
 <div class="wrapper" id="bigbox">
     <section id="main" class="inner">
         <h2 class="major">
-            Map Title Here
+            Map
         </h2>
         <div id="map"></div>
         <div id="gridholder">
@@ -34,15 +34,7 @@
 
     <script>
         window.onload = function () {
-            var fieldList = allFieldsString.split(","); //actually just get selected fields
-
-            require([
-                'map/mymap'
-            ], function (mymap) {
-                var mymap = new mymap(serviceUrl, fieldList);
-                mymap.loadMap()
-
-            });
+            
         }
 
     </script>
