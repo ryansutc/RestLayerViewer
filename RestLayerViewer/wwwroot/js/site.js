@@ -49,6 +49,9 @@ function fetchServiceUrlJson(url, elementId) {
             .then(getJsonResponse)
             .then(function (data) {
                 resolve(data)
+            })
+            .catch((err) => {
+                return reject(err);
             });
     });
 }
@@ -77,6 +80,7 @@ function addError(msg, elementId) {
     let icon = '<span class="glyphicon glyphicon-warning-sign"></span>'
     errElem.innerHTML = icon + " " + msg
 }
+
 /**
  * Remove error text from form element, called on element validate events
  * @param {string} elementId
@@ -100,6 +104,7 @@ function getJsonResponse(response) {
     }
 }
 
+//--------------------------------------
 $(document).ready(function () {     
     /**
      * PAGE SPECIFIC LOGIC HERE:
@@ -194,12 +199,16 @@ $(document).ready(function () {
             'datagrid/dataGridWidget'
         ], function (parser, fieldmgr, dataGridWidget) {
 
+            
             if (allFieldsString) {
                 var fieldmgr = new fieldmgr(allFieldsString.split(","), selectedStateString.split(","));
                 selectedFields = fieldmgr.getSelectedItems();
-                var dataGrid = new dataGridWidget(serviceUrl);
-                dataGrid.fetchTable(selectedFields);
+                var dataGrid = new dataGridWidget(serviceUrl, selectedFields);
+                dataGrid.fetchTable2();
+                //dataGrid.fetchTable(selectedFields);
                 $('#statusMsg').text("");
+
+                //$('#button12').click(dataGrid.fetchTable2(selectedFields));
             }
         });
     } 
