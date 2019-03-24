@@ -4,20 +4,31 @@
 }
 
 @section Styles {
-    <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/dist/styles/ag-grid.css">
-    <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/dist/styles/ag-theme-balham.css">
-    <!--need to load this before widgets added-->
-    <script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.noStyle.js"></script>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.10/dgrid/css/dgrid.css">
+    <style>
+        .dgrid-grid {
+            width: 100%
+        }
+
+        .dgrid-cell .dgrid-header {
+            width: 100px;
+        }
+        .dgrid-scroller {
+            overflow-x: scroll;
+        }
+    </style>
 }
 
 
 <h2>View Data</h2>
 <p style="display:none" id="serviceUrlStore">@ViewData["serviceUrl"]</p>
 <p>ServiceUrl: @ViewData["serviceUrl"]</p>
-<button id="button12">Reload</button>
+<button id="button12" onclick="dataGrid.fetchData();">Reload</button>
 <p id="statusMsg">You must specify a REST feature layer to see data </p>
 
-<div id="dataGridWidget" class="ag-theme-balham"></div>
+<div id="dataGridWidget">
+</div>
+
 
 @section Scripts{
 

@@ -1,137 +1,258 @@
 ﻿define([
     "dojo/_base/declare",
     "dojo/dom",
+    "dojo/dom-construct",
+    "dojo/Stateful",
+    "dojo/on",
     "dijit/_WidgetBase",
+    "dgrid/OnDemandGrid",
+    "dgrid/Selection",
+    "dstore/Memory",
     "esri/tasks/support/Query",
     "esri/tasks/QueryTask",
     "esri/layers/Layer",
+    "dijit/_Container",
     "dijit/_TemplatedMixin",
     "dijit/_OnDijitClickMixin",
+    "datagridpager/dataGridPagerWidget",
     "dojo/text!./templates/dataGridWidget.html"
-], function (declare, dom, _WidgetBase, Query, QueryTask, Layer, _TemplatedMixin, _OnDijitClickMixin, template) {
+], function (declare, dom, domConstruct, Stateful, on, _WidgetBase, Grid, Selection, Memory, Query, QueryTask, Layer, _Container, _TemplatedMixin, _OnDijitClickMixin, PagerWidget, template) {
 
-    return declare([_WidgetBase, _OnDijitClickMixin, _TemplatedMixin], {
+    return declare("dataGridWidget", [_WidgetBase, _OnDijitClickMixin, _Container, _TemplatedMixin], {
         templateString: template,
         oid: "",
         title: 'View your data',
         url: "",
-        columnDefs: {},
+        columnDefs: [],
         selectedFields: [],
+        uniqueIdField: null,
+        pagerWidget: null,
+        _idList: [], //a complete list of Ids for the data
 
-        constructor: function (layerUrl, selectedFields) {
-            this.url = layerUrl;
-            this.fields = selectedFields;
-            var fields = this.fields;
-
+        constructor: function (args) {
+            if (!args.url && !args.selectedFields) {
+                throw "Error: dataGridWidget requires a url and selectedFields";
+            }
+            this.url = args.url;
+            this.selectedFields = args.selectedFields;
+           
+            // create columnDefs
             this.columnDefs = [];
-            for (let field of fields) {
-                this.columnDefs.push({ headerName: field, field: field, sortable: true }); //, filter: true
+            for (let field of this.selectedFields) {
+                this.columnDefs.push({ "id": field, "field": field, "label": field, sortable: true });
             }
         },
 
-        fetchTable: function (fields) {
-            // Fetch serviceUrl data and 
-            // populate in an agGrid table element
-            queryUrl = this.url.replace("?f=json", "");
-            queryUrl += "/query?f=json&outFields=*&returnGeometry=false&spatialRel=esriSpatialRelIntersects&where=1=1"
+        postCreate: function () {
+            var grid = this.createGridTable();
 
-            const gridOptions = {
-                defaultColDef: {
-                    sortable: true
-                },
-                columnDefs: this.columnDefs,
-                defaultColDef: {
-                    sortable: true
-                }
-            };
+            //console.log(this.uniqueIdField);
+            this._uniqueIdFieldGetter().then((id) => {
+                this.uniqueIdField = id;
+                var query = this._defaultQuery(id);
+                query.where = "1=1";
 
-            const eGridDiv = document.querySelector('#dataGridWidget' + this.oid);
-            new agGrid.Grid(eGridDiv, gridOptions);
+                this.fetchIdList(query).then((idList) => {
+                    this._idList = idList;
+                    recordCount = idList.length;
+                    if (recordCount > 500) {
+                        //enable pages
+                        this.pagerWidget = new PagerWidget({
+                            "maxRecordsPerPage": 500,
+                            "recordCount": recordCount,
+                            "sortField": this.uniqueIdField
+                        });
+                        this.addChild(this.pagerWidget);
 
-            fetch(queryUrl)
-            .then(function(response) {
-                return response.json();
-            }).then(function (data) {
-                let features = []
-
-                for (let a of data.features) {
-                    features.push(a.attributes)
-                }
-
-                gridOptions.api.setRowData(features);
-            })
+                        // try to listen for click events on child widget/ is element created yet?
+                        var fetchRecs = function (e) {
+                            this.fetchRecords(this.pagerWidget.sortField, this.pagerWidget.sortType).then((data) => {
+                                this.updateGridTable(grid, data);
+                            });
+                        };
+                        on(dom.byId("PrevRecords" + this.pagerWidget.oid),
+                            "click",
+                            fetchRecs.bind(this)
+                        );
+                        on(dom.byId("NextRecords" + this.pagerWidget.oid),
+                            "click",
+                            fetchRecs.bind(this)
+                        );
+                        //this.addPagination();
+                        this.fetchRecords(this.uniqueIdField, this.pagerWidget.sortType).then((data) => {
+                            this.updateGridTable(grid, data);
+                        });
+                    }
+                });
+            });
         },
 
-        fetchTable2: function () {
-
-            var gridOptions = {
-                defaultColDef: {
-                    sortable: true
-                },
-                columnDefs: this.columnDefs,
-                //rowModelType: 'infinite',
-                //paginationPageSize: 100,
-                //cacheOverflowSize: 2,
-                //maxConcurrentDatsourceRequests: 2,
-                //infiniteInitialRowCount: 500,
-                //maxBlocksInCache: 10
-                defaultColDef: {
-                    sortable: true
-                }
-            };
-            const eGridDiv = document.querySelector('#dataGridWidget' + this.oid);
-            new agGrid.Grid(eGridDiv, gridOptions);
-
+        _defaultQuery: function (uniqueIdField) {
             var query = new Query();
-            var queryTask = new QueryTask(this.url);
-            query.where = "1=1";   // get all records
+            query.returnGeometry = false;
+            query.outFields = this.selectedFields;
+            query.where = "1=1"; // for now, grab everything!
+            return query;
+        },
 
-            //Need to get the UniqueID field for the layer. It is not always ObjectID
-            
-            fetch(this.url)
-                .then(function (response) {
-                    return response.json();
+        _uniqueIdFieldGetter: function () {
+
+            if (this.uniqueIdField) {
+                return new Promise(function (resolve, reject) {
+                    resolve(this.uniqueIdField);
                 })
-                .then(function (data) {
-                    var uniqueIdField = data.objectIdField;
-                    if (uniqueIdField == null) {
-                        uniqueIdField = "ObjectID";
-                    }
-                    //https://dojotoolkit.org/documentation/tutorials/1.8/store_driven_grid/
-                    queryTask.executeForIds(query).then(function (results) {
-                        console.log("we got: " + results.length + " records");
-                        console.log(uniqueIdField);
-
-                        var low = 0;
-                        while (low < results.length) {
-                            high = low + 500;
-                            if (high > results.length) {
-                                high = results.length;
-                            }
-
-                            var sublist = results.slice(low, high);
-                            query.where = uniqueIdField + " IN " + "(" + sublist.join(",") + ")";
-                            console.log(query.where);
-                            query.outFields = ["*"];
-                            query.returnGeometry = false;
-                            queryTask.execute(query)
-                                .then(function (data) {
-                                    var newRows = [];
-
-                                    for (var i = 0; i < data.features.length; i++) {
-                                        newRows.push(data.features[i].attributes);
-                                    }
-                                    var res = gridOptions.api.updateRowData({ add: newRows });
-                                    //console.log(newRows);
-                                })
-                                .catch((err) => {
-                                    console.log(err);
-                                });
-                            setTimeout(function () { }, 3000);
-                            low += 500;
-                        }
+                    .catch(function (err) {
+                        reject(err);
                     });
+            }
+            else {
+                return fetch(this.url)
+                    .then(function (response) {
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        var uniqueIdField = data.objectIdField;
+                        if (uniqueIdField == null) {
+                            uniqueIdField = "ObjectID";
+                        }
+                        return uniqueIdField;
+                    })
+                    .catch(function (err) {
+                        throw err;
+                    });
+            }
+        },
+
+        _uniqueIdFieldSetter: function () {
+            throw "Error, cannot set readonly property uniqueIdField";
+        },
+
+        getColWidth: function (colName) {
+            return 2 + (colName.length * 1);
+        },
+
+        fetchIdList: function(query) {
+            return new Promise((resolve, reject) => {
+                var queryTask = new QueryTask({
+                    url: this.url
                 });
+                queryTask.executeForIds(query).then((ids) => {
+                    resolve(ids);
+                })
+                    .catch((err) => {
+                        console.log(err);
+                        throw err;
+                    })
+            });
+        },
+
+        fetchData: function () {
+            var fields = this.selectedFields;
+            var columnDefs = this.columnDefs;
+            var getColWidth = this.getColWidth;
+
+            var queryTask = new QueryTask({
+                url: this.url
+            });
+
+            this._uniqueIdFieldGetter().then((uniqueIdField) => {
+                
+            
+                var query = new Query();
+                query.returnGeometry = false;
+                query.outFields = this.selectedFields;
+                query.where = "1=1"; // for now, grab everything!
+                query.orderByFields = [uniqueIdField + " DESC"];
+                
+                //query.resultType = "standard";
+                queryTask.execute(query).then(function (results) {
+                    //console.log(results.features);
+                    var data = [];
+                    for (var feature of results.features) {
+                        record = {}
+                        Object.keys(feature.attributes).forEach(function (key, index) {
+                            record[key] = feature.attributes[key]
+                        });
+                        data.push(record);    
+                    };
+                    
+                });
+            });
+        },
+
+        addPagination: function () {
+            var pageNode = domConstruct.create("div",
+                {
+                    id: "page",
+                    innerHTML: "<a href='#'>View More</a>",
+                    onClick: "_nextPageClick()"
+                },
+                "dataGridWidget" + this.oid);
+            this.pageInfo = {}
+        },
+
+        createGridTable: function () {
+            //create the dgrid:
+            var grid = new Grid({
+                //collection: memStore,
+                loadingMessage: 'Loading data...',
+                noDataMessage: 'No results found.',
+                bufferRows: 30,
+                autoWidth: true,
+                columns: this.columnDefs
+            }, "grid");
+            grid.startup();
+            for (var field of this.selectedFields) {
+                grid.styleColumn(field.toUpperCase(), "width:" + this.getColWidth(field) + "em;");
+            }
+
+            grid.on('dgrid-error', function (event) {
+                // Display an error message above the grid when an error occurs.
+                console.log("Error " + event.error.message);
+                console.log("Woah, something went wrong and Dgrid threw an error");
+            });
+
+            grid.on('.dgrid-refresh-complete', function (event) {
+                alert("I have completed!")
+            });
+
+            return grid;
+        },
+
+        updateGridTable(grid, data) {
+            var memStore = new Memory({ data: data, idProperty: this.uniqueIdField });
+            grid.set("collection", memStore);
+            grid.startup();
+        },
+
+        fetchRecords: function (orderBy, orderType) {
+            return new Promise((resolve, reject) => {
+                var sublist = this._idList.slice(this.pagerWidget._idLow, this.pagerWidget._idHigh);
+
+                var query = new Query();
+                query.returnGeometry = false;
+                query.outFields = this.selectedFields;
+                query.where = this.uniqueIdField + " IN " + "(" + sublist.join(",") + ")";
+                query.orderByFields = [orderBy + " " + orderType];
+
+                var queryTask = new QueryTask({
+                    url: this.url
+                });
+
+                queryTask.execute(query)
+                    .then(function (data) {
+                        var newRows = [];
+
+                        for (var i = 0; i < data.features.length; i++) {
+                            newRows.push(data.features[i].attributes);
+                        }
+                        resolve(newRows);
+                    })
+                    .catch((err) => {
+                        console.log(err);
+                        throw err;
+                    });
+            });
         }
     });
 });

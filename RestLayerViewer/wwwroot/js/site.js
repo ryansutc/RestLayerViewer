@@ -198,13 +198,15 @@ $(document).ready(function () {
             'listmgr/listmgr',
             'datagrid/dataGridWidget'
         ], function (parser, fieldmgr, dataGridWidget) {
+            parser.parse(); // Loading page
 
-            
             if (allFieldsString) {
                 var fieldmgr = new fieldmgr(allFieldsString.split(","), selectedStateString.split(","));
                 selectedFields = fieldmgr.getSelectedItems();
-                var dataGrid = new dataGridWidget(serviceUrl, selectedFields);
-                dataGrid.fetchTable2();
+                var dataGrid = new dataGridWidget({
+                    url: serviceUrl, selectedFields: selectedFields
+                }, 'dataGridWidget');
+                //dataGrid.fetchData();
                 //dataGrid.fetchTable(selectedFields);
                 $('#statusMsg').text("");
 

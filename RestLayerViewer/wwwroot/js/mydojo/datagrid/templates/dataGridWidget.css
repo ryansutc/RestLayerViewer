@@ -1,0 +1,7 @@
+﻿
+
+/*Grid need a explicit width/height by default*/
+.dgrid-grid {
+    width: 100%;
+    height: 20em;
+}
