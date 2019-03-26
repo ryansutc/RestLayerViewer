@@ -6,14 +6,16 @@ define([
     'dojo/on',
     'dojo/ready',
     'dojo/parser',
+    'dstore/Memory',
     'dojo/dom-construct',
     'dojo/_base/array',
     'dijit/form/Button',
     'dojo/domReady!'
 ],
-    function (declare, dom, on, ready, parser, domConstruct,
+    function (declare, dom, on, ready, parser, Memory, domConstruct,
                 array, Button) {
-        return declare("datagrid.dataSource", null, {
+        return declare("datagrid.dataSource", [Memory], {
+            // this is a subclass of the dstore/memory class to override sort and filter methods.
             oid: 0,
 
             getRows: function (params) {

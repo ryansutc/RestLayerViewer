@@ -1,9 +1,11 @@
 ﻿define([
     "dojo/_base/declare",
     "dojo/dom",
+    "dojo/dom-class",
     "dojo/dom-construct",
     "dojo/Stateful",
     "dojo/on",
+    "dojo/_base/lang",
     "dijit/_WidgetBase",
     "dgrid/OnDemandGrid",
     "dgrid/Selection",
@@ -16,7 +18,7 @@
     "dijit/_OnDijitClickMixin",
     "datagridpager/dataGridPagerWidget",
     "dojo/text!./templates/dataGridWidget.html"
-], function (declare, dom, domConstruct, Stateful, on, _WidgetBase, Grid, Selection, Memory, Query, QueryTask, Layer, _Container, _TemplatedMixin, _OnDijitClickMixin, PagerWidget, template) {
+], function (declare, dom, domClass, domConstruct, Stateful, on, lang, _WidgetBase, Grid, Selection, Memory, Query, QueryTask, Layer, _Container, _TemplatedMixin, _OnDijitClickMixin, PagerWidget, template) {
 
     return declare("dataGridWidget", [_WidgetBase, _OnDijitClickMixin, _Container, _TemplatedMixin], {
         templateString: template,
@@ -45,6 +47,8 @@
 
         postCreate: function () {
             var grid = this.createGridTable();
+
+            //add our custom event listeners to the columns if the table is paged:
 
             //console.log(this.uniqueIdField);
             this._uniqueIdFieldGetter().then((id) => {
@@ -85,12 +89,36 @@
                     }
                 });
             });
+
+            //NEW: test to see if we can hook into dgrid sort function
+            var sortData = function (event) {
+                // [todo: need a reset function in pagerWidget class]
+                this.pagerWidget.resetPage();
+                this.pagerWidget.sortField = event.sort[0].property;
+                this.pagerWidget.sortType = event.sort[0].descending ? "DESC" : "ASC";
+
+                grid.updateSortArrow(event.sort, true);
+                //var order = th
+                console.log("haha I was sorted!");
+                event.preventDefault();
+                this.fetchIdList(this._defaultQuery(this.pagerWidget.sortField, this.pagerWidget.sortType)).then((idList) => {
+                    this._idList = idList;
+                    this.fetchRecords(this.pagerWidget.sortField, this.pagerWidget.sortType).then((data) => {
+                        this.updateGridTable(grid, data);
+                    });
+                });
+            };
+
+            grid.on('dgrid-sort', lang.hitch(this, sortData));
         },
 
-        _defaultQuery: function (uniqueIdField) {
+        _defaultQuery: function (orderField, orderType) {
             var query = new Query();
             query.returnGeometry = false;
             query.outFields = this.selectedFields;
+            if (orderType) {
+                query.orderByFields = [orderField + " " + orderType];
+            }
             query.where = "1=1"; // for now, grab everything!
             return query;
         },
@@ -128,7 +156,7 @@
         },
 
         getColWidth: function (colName) {
-            return 2 + (colName.length * 1);
+            return 2 + colName.length * 1;
         },
 
         fetchIdList: function(query) {
@@ -137,12 +165,13 @@
                     url: this.url
                 });
                 queryTask.executeForIds(query).then((ids) => {
+                    console.log("first ID is now " + ids[0]);
                     resolve(ids);
                 })
                     .catch((err) => {
                         console.log(err);
                         throw err;
-                    })
+                    });
             });
         },
 
@@ -156,8 +185,7 @@
             });
 
             this._uniqueIdFieldGetter().then((uniqueIdField) => {
-                
-            
+
                 var query = new Query();
                 query.returnGeometry = false;
                 query.outFields = this.selectedFields;
@@ -188,7 +216,7 @@
                     onClick: "_nextPageClick()"
                 },
                 "dataGridWidget" + this.oid);
-            this.pageInfo = {}
+            this.pageInfo = {};
         },
 
         createGridTable: function () {
@@ -213,16 +241,24 @@
             });
 
             grid.on('.dgrid-refresh-complete', function (event) {
-                alert("I have completed!")
+                alert("I have completed!");
             });
 
             return grid;
         },
 
         updateGridTable(grid, data) {
-            var memStore = new Memory({ data: data, idProperty: this.uniqueIdField });
+            
+            var customMemStore = declare([Memory], {
+                sort: function (sorted) {
+                    sorted = [];//Prevent the collection from sorting the data
+                    return this.inherited(arguments);
+                }
+            });
+            var memStore = new customMemStore({ data: data, idProperty: this.uniqueIdField });
+
             grid.set("collection", memStore);
-            grid.startup();
+            //grid.startup();
         },
 
         fetchRecords: function (orderBy, orderType) {
@@ -233,7 +269,9 @@
                 query.returnGeometry = false;
                 query.outFields = this.selectedFields;
                 query.where = this.uniqueIdField + " IN " + "(" + sublist.join(",") + ")";
-                query.orderByFields = [orderBy + " " + orderType];
+                if (orderBy && orderType) {
+                    query.orderByFields = [orderBy + " " + orderType];
+                }
 
                 var queryTask = new QueryTask({
                     url: this.url

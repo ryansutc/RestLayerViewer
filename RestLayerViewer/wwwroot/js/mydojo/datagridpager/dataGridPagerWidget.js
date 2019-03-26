@@ -65,6 +65,12 @@
             if (this._idLow == 0) {
                 dojo.addClass("PrevRecords" + this.oid, 'disabled');
             }
+        },
+
+        resetPage: function () {
+            this._idLow = 0;
+            this._idHigh = this.maxRecordsPerPage;
+            dojo.addClass("PrevRecords" + this.oid, 'disabled');
         }
 
 
