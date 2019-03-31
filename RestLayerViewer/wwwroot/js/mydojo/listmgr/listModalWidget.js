@@ -35,7 +35,7 @@
             for (var i = 0; i < fieldList.length; i++) {
                 fieldList[i][1] = 1;
             }
-            loadFieldList()
+           loadFieldList();
         },
 
         _excludeAll: function () {
@@ -43,7 +43,7 @@
             for (var i = 0; i < fieldList.length; i++) {
                 fieldList[i][1] = 0;
             }
-            loadFieldList()
+            loadFieldList();
         },
     
         loadFieldList: function () {

@@ -16,9 +16,11 @@
     "dijit/_Container",
     "dijit/_TemplatedMixin",
     "dijit/_OnDijitClickMixin",
+    "map/featureLayerInfo",
     "datagridpager/dataGridPagerWidget",
     "dojo/text!./templates/dataGridWidget.html"
-], function (declare, dom, domClass, domConstruct, Stateful, on, lang, _WidgetBase, Grid, Selection, Memory, Query, QueryTask, Layer, _Container, _TemplatedMixin, _OnDijitClickMixin, PagerWidget, template) {
+], function (declare, dom, domClass, domConstruct, Stateful, on, lang, _WidgetBase, Grid, Selection, Memory, Query, QueryTask, Layer, _Container,
+    _TemplatedMixin, _OnDijitClickMixin, featureLayerInfo, PagerWidget, template) {
 
     return declare("dataGridWidget", [_WidgetBase, _OnDijitClickMixin, _Container, _TemplatedMixin], {
         templateString: template,
@@ -30,6 +32,7 @@
         uniqueIdField: null,
         pagerWidget: null,
         _idList: [], //a complete list of Ids for the data
+        layerInfo: null,
 
         constructor: function (args) {
             if (!args.url && !args.selectedFields) {
@@ -37,7 +40,7 @@
             }
             this.url = args.url;
             this.selectedFields = args.selectedFields;
-           
+            this.layerInfo = new featureLayerInfo({ url: this.url });
             // create columnDefs
             this.columnDefs = [];
             for (let field of this.selectedFields) {
@@ -71,7 +74,7 @@
                         // try to listen for click events on child widget/ is element created yet?
                         var fetchRecs = function (e) {
                             this.fetchRecords(this.pagerWidget.sortField, this.pagerWidget.sortType).then((data) => {
-                                this.updateGridTable(grid, data);
+                                this.updateGridTable(grid, data, "Paged");
                             });
                         };
                         on(dom.byId("PrevRecords" + this.pagerWidget.oid),
@@ -82,34 +85,43 @@
                             "click",
                             fetchRecs.bind(this)
                         );
-                        //this.addPagination();
+                        //----------------------
+
+                        
                         this.fetchRecords(this.uniqueIdField, this.pagerWidget.sortType).then((data) => {
-                            this.updateGridTable(grid, data);
+                            this.updateGridTable(grid, data, "Paged");
+                        });
+
+                        //NEW: test to see if we can hook into dgrid sort function
+                        var sortData = function (event) {
+                            // [todo: need a reset function in pagerWidget class]
+                            this.pagerWidget.resetPage();
+                            this.pagerWidget.sortField = event.sort[0].property;
+                            this.pagerWidget.sortType = event.sort[0].descending ? "DESC" : "ASC";
+
+                            grid.updateSortArrow(event.sort, true);
+                            //var order = th
+                            console.log("haha I was sorted!");
+                            event.preventDefault();
+                            this.fetchIdList(this._defaultQuery(this.pagerWidget.sortField, this.pagerWidget.sortType)).then((idList) => {
+                                this._idList = idList;
+                                this.fetchRecords(this.pagerWidget.sortField, this.pagerWidget.sortType).then((data) => {
+                                    this.updateGridTable(grid, data);
+                                });
+                            });
+                        };
+
+                        grid.on('dgrid-sort', lang.hitch(this, sortData));
+                    }
+                    else {
+                        this.fetchRecords().then((data) => {
+                            this.updateGridTable(grid, data, "Simple");
                         });
                     }
                 });
             });
 
-            //NEW: test to see if we can hook into dgrid sort function
-            var sortData = function (event) {
-                // [todo: need a reset function in pagerWidget class]
-                this.pagerWidget.resetPage();
-                this.pagerWidget.sortField = event.sort[0].property;
-                this.pagerWidget.sortType = event.sort[0].descending ? "DESC" : "ASC";
-
-                grid.updateSortArrow(event.sort, true);
-                //var order = th
-                console.log("haha I was sorted!");
-                event.preventDefault();
-                this.fetchIdList(this._defaultQuery(this.pagerWidget.sortField, this.pagerWidget.sortType)).then((idList) => {
-                    this._idList = idList;
-                    this.fetchRecords(this.pagerWidget.sortField, this.pagerWidget.sortType).then((data) => {
-                        this.updateGridTable(grid, data);
-                    });
-                });
-            };
-
-            grid.on('dgrid-sort', lang.hitch(this, sortData));
+            
         },
 
         _defaultQuery: function (orderField, orderType) {
@@ -134,20 +146,14 @@
                     });
             }
             else {
-                return fetch(this.url)
-                    .then(function (response) {
-                        return response.json();
-                    })
-                    .then(function (data) {
-                        var uniqueIdField = data.objectIdField;
-                        if (uniqueIdField == null) {
-                            uniqueIdField = "ObjectID";
-                        }
-                        return uniqueIdField;
-                    })
-                    .catch(function (err) {
-                        throw err;
-                    });
+                return this.layerInfo.fetchLayerInfo().then(function (data) {
+                    var uniqueIdField = data.data.objectIdField;
+                    if (uniqueIdField == null) {
+                        uniqueIdField = "ObjectID";
+                    }
+                    return uniqueIdField;
+                });
+              
             }
         },
 
@@ -175,39 +181,6 @@
             });
         },
 
-        fetchData: function () {
-            var fields = this.selectedFields;
-            var columnDefs = this.columnDefs;
-            var getColWidth = this.getColWidth;
-
-            var queryTask = new QueryTask({
-                url: this.url
-            });
-
-            this._uniqueIdFieldGetter().then((uniqueIdField) => {
-
-                var query = new Query();
-                query.returnGeometry = false;
-                query.outFields = this.selectedFields;
-                query.where = "1=1"; // for now, grab everything!
-                query.orderByFields = [uniqueIdField + " DESC"];
-                
-                //query.resultType = "standard";
-                queryTask.execute(query).then(function (results) {
-                    //console.log(results.features);
-                    var data = [];
-                    for (var feature of results.features) {
-                        record = {}
-                        Object.keys(feature.attributes).forEach(function (key, index) {
-                            record[key] = feature.attributes[key]
-                        });
-                        data.push(record);    
-                    };
-                    
-                });
-            });
-        },
-
         addPagination: function () {
             var pageNode = domConstruct.create("div",
                 {
@@ -231,7 +204,8 @@
             }, "grid");
             grid.startup();
             for (var field of this.selectedFields) {
-                grid.styleColumn(field.toUpperCase(), "width:" + this.getColWidth(field) + "em;");
+                var colWidth = Math.max(this.getColWidth(field), 6);
+                grid.styleColumn(field, "width:" + colWidth + "em;");
             }
 
             grid.on('dgrid-error', function (event) {
@@ -247,28 +221,39 @@
             return grid;
         },
 
-        updateGridTable(grid, data) {
-            
-            var customMemStore = declare([Memory], {
-                sort: function (sorted) {
-                    sorted = [];//Prevent the collection from sorting the data
-                    return this.inherited(arguments);
-                }
-            });
-            var memStore = new customMemStore({ data: data, idProperty: this.uniqueIdField });
+        updateGridTable: function (grid, data, storeType) {
+            var memStore = null;
+            if (storeType === "Paged") {
+                var customMemStore = declare([Memory], {
+                    sort: function (sorted) {
+                        sorted = [];//Prevent the collection from sorting the data
+                        return this.inherited(arguments);
+                    }
+                });
+                memStore = new customMemStore({ data: data, idProperty: this.uniqueIdField });
+            }
+            else {
+                memStore = new Memory({ data: data, idProperty: this.uniqueIdField });
+            }
 
             grid.set("collection", memStore);
-            //grid.startup();
+
         },
 
         fetchRecords: function (orderBy, orderType) {
             return new Promise((resolve, reject) => {
-                var sublist = this._idList.slice(this.pagerWidget._idLow, this.pagerWidget._idHigh);
+                
 
                 var query = new Query();
                 query.returnGeometry = false;
                 query.outFields = this.selectedFields;
-                query.where = this.uniqueIdField + " IN " + "(" + sublist.join(",") + ")";
+                if (this.pagerWidget !== null) {
+                    var sublist = this._idList.slice(this.pagerWidget._idLow, this.pagerWidget._idHigh);
+                    query.where = this.uniqueIdField + " IN " + "(" + sublist.join(",") + ")";
+                }
+                else {
+                    query.where = "1=1";
+                }
                 if (orderBy && orderType) {
                     query.orderByFields = [orderBy + " " + orderType];
                 }
