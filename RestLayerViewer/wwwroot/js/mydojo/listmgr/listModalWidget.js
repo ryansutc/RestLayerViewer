@@ -82,10 +82,10 @@
 
         _fldKeywordClick: function (e) {
             if (fieldList[e.target.innerText] == 0) {
-                fieldList[e.target.innerText] = 1
+                fieldList[e.target.innerText] = 1;
             }
             else if (fieldList[e.target.innerText] == 1) {
-                fieldList[e.target.innerText] = 0
+                fieldList[e.target.innerText] = 0;
             }
             this.loadFieldList();
         },

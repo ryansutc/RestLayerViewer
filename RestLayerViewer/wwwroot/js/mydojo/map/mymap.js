@@ -37,15 +37,17 @@ define([
             fields: null,
             basemap: null,
             mapViewContainer: null,
-            myLayer: null,
+            layerType: "Feature Layer",
 
 
-            constructor: function (url, fields) {
-                this.url = url,
-                    this.fields = fields,
-                    this.basemap = "dark-gray-vector",
-                    this.mapViewContainer = "map",
-                    this.myLayer = null
+            constructor: function (url, fields, layerType) {
+                this.url = url;
+                this.fields = fields;
+                this.basemap = "dark-gray-vector";
+                this.mapViewContainer = "map";
+                if (layerType) {
+                    this.layerType = layerType;
+                }
             },
 
             loadMap: function () {
@@ -59,7 +61,9 @@ define([
                 });
                 
 
-                //if (this.myLayer === null) {
+                if (this.layerType !== "Feature Layer") {
+                    throw "Error: Map does not support " + this.layerType + "s at this time";
+                }
                 var myLayer = this.myLayer;
                 myLayer = new FeatureLayer(
                     this.url, {
@@ -69,9 +73,7 @@ define([
                 map.add(myLayer);
                 myLayer.when(function () {
                     view.extent = myLayer.fullExtent;
-                });
-                //}
-                
+                });                
             },
 
             zoomPlace: function (item) {
@@ -81,11 +83,12 @@ define([
                 */
 
                 var query = new Query();
+                var newPlace = null;
                 if (item === null) {
-                    var newPlace = items[Math.floor(Math.random() * items.length)];
+                    newPlace = items[Math.floor(Math.random() * items.length)];
                 }
                 else {
-                    var newPlace = item;
+                    newPlace = item;
                 }
                 query.where = "OBJECTID = '" + newPlace.OBJECTID + "'";
 

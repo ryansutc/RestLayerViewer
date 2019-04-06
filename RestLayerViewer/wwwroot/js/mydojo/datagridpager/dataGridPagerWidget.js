@@ -21,7 +21,7 @@
 
         constructor: function (args) {
             // get maxRecordsPerPage
-            if (args.recordCount == null) {
+            if (args.recordCount === null) {
                 throw "Error: No recordCount provided";
             }
             this.recordCount = args.recordCount;

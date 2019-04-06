@@ -6,8 +6,10 @@
     "esri/request",
     "esri/identity/OAuthInfo",
     "esri/identity/IdentityManager",
-    "esri/portal/PortalGroup"
-], function (declare, lang, dom, on, esriRequest, OAuthInfo, IdentityManager, PortalGroup) {
+    "esri/portal/Portal",
+    "esri/portal/PortalGroup",
+    "esri/portal/PortalUser"
+], function (declare, lang, dom, on, esriRequest, OAuthInfo, IdentityManager, Portal, PortalGroup, PortalUser) {
 
     return declare(null, {
         oid: "",
@@ -25,35 +27,10 @@
                 this.url = args.url.slice(0, args.url.indexOf("?")); //strip out parameters!
             }
 
-            this.registerOAuth();
-            // Handle click of "Sign in" button that appears when user selects private service:
-            /*
-            on(dom.byId("signin"), "click", function (e) {
-                var url = $('#serviceUrl').val();
-                esriRequest(url, { query: { f: "json" }, responseType: "json" })
-                    .then(function (response) {
-                        console.log(JSON.stringify(response, null, 2));
-                    });
-            }).bind(this);
-            */
-        },
-
-        registerOAuth: function () {
-            this.portal = new PortalGroup();
-            this.portal.authMode = "immediate";
-
-            // https://developers.arcgis.com/documentation/core-concepts/security-and-authentication/accessing-arcgis-online-services/
-            this.info = new OAuthInfo({
-                appId: this.appId, // "a39UJJqj4xXbIMtT" St Albert App Client ID :
-                popup: false,
-                popupCallbackUrl: "index.html" //[todo: what should this be so we can use popup?]
-            });
-
-            IdentityManager.registerOAuthInfos([this.info]);
         },
 
         fetchLayerInfo: function () {
-            var requestObj = { query: { f: "json" }, responseType: "json" };
+            var requestObj = { query: { f: "json" }, responseType: "json", authMode: "no-prompt" };
             var url = this.url;
             return new Promise((resolve, reject) => {
                 //IdentityManager.checkSignInStatus(this.info.portalUrl + "/sharing").then(function () {
@@ -64,12 +41,31 @@
                         resolve(data);
                     })
                     .catch((err) => {
-                        reject(err);
+                        var hepfulErrorMsg = this.getErrorHelpMsg(err);
+                        reject(hepfulErrorMsg);
                     });
             });
-                    
-            //});
         },
+
+        getErrorHelpMsg: function (err) {
+            if (err.details.httpStatus === 0) {
+                return "Unable to load that page. Is this a <span class='tooltip1'>" +
+                    "<a href='https://en.wikipedia.org/wiki/Cross-origin_resource_sharing' title='CORS Wiki'>CORS issue?</a>" +
+                    "<span class='tooltiptext small'>Press F12 and open <i>Developer Tools>Network</i> to see</span>";
+            }
+            else if (err.details.httpStatus === 499) {
+                return "Unable to access secured services. If you have credentials you can log in to give the app a token and allow it to access";
+            }
+            else if (err.message === "Invalid Url") {
+                return "Couldn't seem to get that url. Response: " + err.details.httpStatus;
+            }
+            else if (err.message === "Unexpected token < in JSON at position 0") {
+                return "problem reading JSON data. Are you sure this is an ArcGIS REST Endpoint?";
+            }
+            else {
+                return err.message + " (response: " + err.details.httpStatus + ")";
+            }
+        }, 
 
         /**
           * Get ArcGIS Feature Layer REST Json with an async fetch call.
@@ -89,21 +85,10 @@
             });
         },
 
-        getJsonResponse: function (response) {
-            if (!response.ok) {
-                throw Error(response.status + ": " + response.statusText);
-            }
-            try {
-                return response.json();
-            }
-            catch (err) {
-                throw Error("Invalid JSON. Is this really a REST endpoint?");
-            }
-        },
-
         /**
          * 
          * @param {any} data: json FeatureLayer data
+         * @returns {Array} list of fields.
          */
         getFields: function (data) {
 
@@ -115,9 +100,12 @@
                 return fields;
             }
             catch (err) {
-                if (data.hasOwnProperty('layers')) {
+                if (data.data.hasOwnProperty('layers')) {
                     // is this just a feature service?
-                    throw Error("Looks like this is a Feature Service. You need to specify a feature layer from the service.")
+                    throw Error("Looks like this is a Feature Service. You need to specify a feature layer from the service.");
+                }
+                else if (data.data.type !== "Feature Layer") {
+                    throw Error("Looks like this is a " + data.data.type + ". Not a FeatureLayer.");
                 }
                 throw Error("Could not retrieve field names from JSON. Is this a valid ArcGIS feature layer?");
             }
@@ -131,6 +119,21 @@
             catch (err) {
                 console.log(err);
             }
+        },
+
+        getCapabilities: function (data) {
+            try {
+                var capabilities = data.data.capabilities;
+                return capabilities;
+            }
+            catch (err) {
+                console.log(err);
+            }
+        },
+
+        getType: function (data) {
+            return data.data.type;
         }
+
     });
 });

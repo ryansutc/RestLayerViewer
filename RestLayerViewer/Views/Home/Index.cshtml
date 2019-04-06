@@ -6,53 +6,84 @@
     <link href="@Url.Content("~/js/mydojo/listmgr/templates/listModalWidget.css")" rel="stylesheet" type="text/css"/>
 }
 
-<div class="row">
-    <div class="col-md-8">
-        <h2>View your ArcGIS REST Feature Services Data</h2>
-        <ul>
-            <li>view the data in a data table </li>
-            <li>View the data in an interactive map</li>
-        </ul>
-    <div class="col-md-8">
-        <form method="post">
-            <div class="form-group">
-                <label for="serviceUrl">Service URL:</label>
-                <input class="form-control" id="serviceUrl" name="serviceUrl" aria-label="Service URL" value="@ViewData["serviceUrl"]"
-                       placeholder="Enter a feature service layer url like: https://sampleserver3.arcgisonline.com/ArcGIS/rest/services/BloomfieldHillsMichigan/LandusePlanning/FeatureServer/0" />
-                <small class="form-error-msg text-danger" id="serviceUrlError"><span class="glyphicon glyphicon-warning-sign"></span></small>
-            </div>
-            <div class="form-group" id="fieldsGroup">
-                <label for="filterFields">
-                    Fields
-                    <small><a class="active" id="filterFields">(filter)</a></small>
-                </label>
-                <small class="form-error-msg text-danger" id="filterFieldsError">
-                    <span class="glyphicon glyphicon-warning-sign"></span>
-                </small>
-                <p class="small" id="selectedFields" name="selectedFields"></p>
-                <input class="form-control" id="allFields" aria-hidden="true" value="@ViewData["allFieldsString"]"
-                       name="allFields" type="hidden" />
-                <input class="form-control" id="selectedState" aria-hidden="true" value="@ViewData["selectedState"]"
-                       name="selectedState" type="hidden" />
-            </div>
-            <div class="form-group" id="coordGroup">
-                <label for="coordName">
-                    Projection
-                    <small><a class="active" id="coordInfo">(info)</a></small>
-                </label>
-                <p class="small" id="coordName" name="coordName"></p>
-            </div>
-            <div class="form-group" id="GoGroup">
-                <button class="btn btn-default" id="showDataBtn" disabled>Show Data</button>
-                <small class="form-error-msg text-danger" id="showDataBtnError">
-                    <span class="glyphicon glyphicon-warning-sign"></span> Something went wrong
-                </small>
-            </div>
-        </form>
+    <div class="row">
+        <div class="col-md-4">
+            <p><button class="btn-primary small" id="signinAGOL">log in</button></p>
+        </div>
+        <div class="col-md-4" id="usercredsarea" hidden>
+            <p>User Signed In</p>
+            <p class="tooltip1">
+                <i class="glyphicon glyphicon-user"></i>
+                <span id="username">Username</span>
+                <span class="tooltiptext small" id="userinfo">ArcGIS.com username</span>
+            </p>
+        </div>
     </div>
-    
-    <div id="listModalWidget"></div>
-</div>
+    <div class="row">
+        <div class="col-md-8">
+            <h2>View your ArcGIS REST Feature Services Data</h2>
+            <ul>
+                <li>view the data in a data table </li>
+                <li>View the data in an interactive map</li>
+            </ul>
+            <div class="col-md-8">
+                <form method="post">
+                    <div class="form-group">
+                        <label for="serviceUrl">Service URL:</label>
+                        <input class="form-control" id="serviceUrl" name="serviceUrl" aria-label="Service URL" value="@ViewData["serviceUrl"]"
+                               placeholder="Enter a feature service layer url like: https://sampleserver3.arcgisonline.com/ArcGIS/rest/services/BloomfieldHillsMichigan/LandusePlanning/FeatureServer/0" />
+                        <small class="form-error-msg text-danger" id="serviceUrlError"><span class="glyphicon glyphicon-warning-sign"></span></small>
+                    </div>
+                    <div class="form-group" id="fieldsGroup">
+                        <label for="filterFields">
+                            Fields
+                            <small><a class="active" id="filterFields">(filter)</a></small>
+                        </label>
+                        <small class="form-error-msg text-danger" id="filterFieldsError">
+                            <span class="glyphicon glyphicon-warning-sign"></span>
+                        </small>
+                        <p class="small" id="selectedFields" name="selectedFields"></p>
+                        <input class="form-control" id="allFields" aria-hidden="true" value="@ViewData["allFieldsString"]"
+                               name="allFields" type="hidden" />
+                        <input class="form-control" id="selectedState" aria-hidden="true" value="@ViewData["selectedState"]"
+                               name="selectedState" type="hidden" />
+                        <input class="form-control" id="identityMgr" value="@ViewData["identityMgr"]" name="identityMgr" type="hidden"/>
+                    </div>
+                    <div class="form-group" id="coordGroup">
+                        <label for="coordName">
+                            Projection
+                            <small><a class="active" id="coordInfo">(info)</a></small>
+                        </label>
+                        <p class="small" id="coordName" name="coordName"></p>
+                    </div>
+                    <div class="form-group" id="capabilitiesGroup">
+                        <label for="capabilities">
+                            Layer Capabilities:
+                            <small>
+                                <span class="active" id="capabilitiesInfo">
+                                    <span class="tooltip1">
+                                        <span>(info)</span>
+                                        <span class="tooltiptext small" id="userinfo">Requires "Query" to see attributes</span>
+                                    </span>
+                                </span>
+                                <p id="capabilities"></p>
+                            </small>
+                        </label>
+                        <p class="small" id="coordName" name="coordName"></p>
+                    </div>
+                   
+                    <div class="form-group" id="GoGroup">
+                        <button class="btn btn-default" id="showDataBtn" disabled>Show Data</button>
+                        <small class="form-error-msg text-danger" id="showDataBtnError">
+                            <span class="glyphicon glyphicon-warning-sign"></span> Something went wrong
+                        </small>
+                    </div>
+                </form>
+                
+            </div>
 
-@section Scripts{
-}
+            <div id="listModalWidget"></div>
+        </div>
+    </div>
+            @section Scripts{
+            }

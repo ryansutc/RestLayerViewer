@@ -34,9 +34,14 @@
             </div>
             <div class="navbar-collapse collapse">
                 <ul class="nav navbar-nav">
-                    <li><a asp-area="" asp-controller="Home" asp-action="Index">Home</a></li>
-                    <li><a asp-area="" asp-controller="Home" asp-action="Data">Data</a></li>
-                    <li><a asp-area="" asp-controller="Home" asp-action="Map">Map</a></li>
+                    <li><a asp-area="" asp-controller="Home" asp-action="Index" class="pageLink">Home</a></li>
+                    <li><a asp-area="" asp-controller="Home" asp-action="Data" class="pageLink">Data</a></li>
+                    <li><a asp-area="" asp-controller="Home" asp-action="Map" class="pageLink">Map</a></li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="#">Log In</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -73,6 +78,10 @@
                 {
                     name: "datagridpager",
                     location: packagePath + '/js/mydojo/datagridpager'
+                },
+                {
+                    name: "auth",
+                    location: packagePath + '/js/mydojo/auth'
                 }
             ],
             paths: { map: packagePath + '/js/mydojo/map' },
@@ -84,6 +93,7 @@
         var allFieldsString = '@ViewData["allFields"]';
         var selectedStateString = '@ViewData["selectedState"]';
         var page = '@ViewData["Page"]';
+        var identityMgr = '@ViewData["IdentityMgr"]';
 
     </script>
     <environment include="Development">

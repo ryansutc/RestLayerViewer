@@ -46,10 +46,16 @@ $(document).ready(function () {
             'dojo/parser',
             'listmgr/listmgr',
             'listmgr/listModalWidget',
-            "map/featureLayerInfo"
-        ], function (parser, fieldmgr, listModalWidget, featureLayerInfo) {
-
+            "map/featureLayerInfo",
+            "auth/authHelp"
+        ], function (parser, fieldmgr, listModalWidget, featureLayerInfo, authHelp) {
+            var myAuth = new authHelp();
+            myAuth.registerOAuth(); // TEST
             parser.parse(); // Let page load first.
+            var userCredsArea = $('#usercredsarea');
+            var serviceUrlTextBox = $('#serviceUrl');
+            var allFieldsTextBox = $("#allFields");
+            var selectedStateTextBox = $("#selectedState");
 
             var myfieldModalWidget = new listModalWidget({
                 title: 'Add/Remove Fields from Display',
@@ -58,7 +64,7 @@ $(document).ready(function () {
 
             var myFLInfo = null; //FeatureLayerInfo. 
 
-            if (serviceUrl) {
+            if (serviceUrl && serviceUrl != "") {
                 // restore existing state:
                 myfieldModalWidget.listmgr = new fieldmgr(allFieldsString.split(","), selectedStateString.split(","));
 
@@ -66,7 +72,50 @@ $(document).ready(function () {
 
                 $('#showDataBtn').prop('disabled', false);
                 $('#fieldsGroup').show();
+                serviceUrlTextBox.prop("disabled", true);
+                $("#showDataBtn").text("Clear Data");
+                $('#showDataBtn').removeAttr("type").attr("type", "reset");
+                $("#showDataBtn").click(function (event) {
+                    serviceUrlTextBox.val("");
+                    serviceUrlTextBox.text("");
+                    allFieldsTextBox.val("");
+                    allFieldsTextBox.text("");
+                    selectedStateTextBox.val("");
+                    selectedStateTextBox.text("");
+                    
+                    //event.preventDefault;
+                    window.location.replace("home/clear");
+                    //window.location.reload();
+                });
             }
+            else {
+                $('.pageLink').hide();
+            }
+            $('#signinAGOL').click(function () {
+                myAuth.signIn();
+                myAuth.portal.when(function () {
+                    $("#username").html(myAuth.portal.user.username + " <a href='no-javascript.html' title='sign out' id='signout'>(sign out)</a>");
+                    $("#userinfo").html(myAuth.portal.user.fullName + "<br/>" + myAuth.portal.name);
+                    userCredsArea.show();
+                    fetchServiceUrlInfo();
+
+                    console.log("Identity Manager: \n" + myAuth.IdentityMgrToJSON());
+                    var IdentityMgr = $("#identityMgr");
+                    IdentityMgr.val(myAuth.OAuthInfoToJSON());
+
+                    //TEST lets see if we can reinitialize:
+                    myAuth.reinitialize(myAuth.OAuthInfoToJSON());
+                });
+            });
+
+            $("body").on("click", "#signout", function (event) {
+                event.preventDefault();
+                console.log("signing out.");
+                myAuth.signOut();
+                $("#username").html("");
+                $("#userinfo").html("");
+                userCredsArea.hide();
+            });
 
             $('#filterFields').click(function () {
                 myfieldModalWidget.loadFieldList();
@@ -88,8 +137,12 @@ $(document).ready(function () {
             });
 
             $('#serviceUrl').focusout(function (event) {
-                var errorElementId = this.id + "Error";
-                var url = this.value;
+                fetchServiceUrlInfo(event);
+            });
+
+            function fetchServiceUrlInfo(event) {
+                var errorElementId = "serviceUrlError";
+                var url = $('#serviceUrl').val();
 
                 if (url === "") {
                     hideError(errorElementId);
@@ -108,15 +161,21 @@ $(document).ready(function () {
                     // show fields form element
                     $("#fieldsGroup").show();
                     $('#showDataBtn').prop('disabled', false);
+                    
 
                     $('#coordName').text("wkid:" + myFLInfo.getProj(data).toString());
                     $('#coordInfo').attr("href", "//spatialreference.org/ref/epsg/" + myFLInfo.getProj(data) + "/html/");
+                    $('#capabilities').text(myFLInfo.getCapabilities(data));
+                    if (myFLInfo.getType(data) !== "Feature Layer") {
+                        addError("Warning: this does not appear to be a Feature Layer. Might not be able to render.", errorElementId);
+                    }
                 }).catch((err) => {
+
                     addError(err, errorElementId);
                     $('#showDataBtn').prop('disabled', true);
                     $('#fieldsGroup').hide();
                 });
-            });
+            }
 
         });
 
@@ -125,9 +184,15 @@ $(document).ready(function () {
         require([
             'dojo/parser',
             'listmgr/listmgr',
-            'datagrid/dataGridWidget'
-        ], function (parser, fieldmgr, dataGridWidget) {
+            'datagrid/dataGridWidget',
+            "auth/authHelp"
+        ], function (parser, fieldmgr, dataGridWidget, authHelp) {
+            var myAuth = new authHelp();
+            myAuth.registerOAuth(); // TEST
             parser.parse(); // Loading page
+            if (identityMgr) {
+                myAuth.reinitialize(identityMgr);
+            }
 
             if (allFieldsString) {
                 var myFieldmgr = new fieldmgr(allFieldsString.split(","), selectedStateString.split(","));
@@ -139,20 +204,43 @@ $(document).ready(function () {
 
                 $('#statusMsg').text("");
 
-            }
+            }            
         });
     }
     else if (page === "Map") {
         require([
             'dojo/parser',
             'map/mymap',
-            'listmgr/listmgr'
-        ], function (parser, map, fieldmgr) {
+            'listmgr/listmgr',
+            "map/featureLayerInfo",
+            "auth/authHelp"
+        ], function (parser, map, fieldmgr, featureLayerInfo, authHelp) {
             if (allFieldsString) {
+                var myAuth = new authHelp();
+                myAuth.registerOAuth();
+                parser.parse();
+                if (identityMgr) {
+                    myAuth.reinitialize(identityMgr);
+                }
+
                 var myFieldmgr = new fieldmgr(allFieldsString.split(","), selectedStateString.split(","));
                 selectedFields = myFieldmgr.getSelectedItems();
-                var mymap = new map(serviceUrl, selectedFields);
-                mymap.loadMap();
+
+                //check what type of layer it is first:
+                var myFLInfo = new featureLayerInfo({ url: serviceUrl });
+                myFLInfo.fetchLayerInfo().then(function (data) {
+                    var layerType = myFLInfo.getType(data);
+                    if (!layerType) {
+                        layerType = "Unknown Service Type";
+                    }
+                    try {
+                        var mymap = new map(serviceUrl, selectedFields, layerType);
+                        mymap.loadMap();
+                    }
+                    catch (err) {
+                        $("#errorMsg").text(err);
+                    }
+                });
             }
         });
     }

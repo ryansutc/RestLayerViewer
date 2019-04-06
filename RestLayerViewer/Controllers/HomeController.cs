@@ -22,6 +22,7 @@ namespace RestLayerViewer.Controllers
             ViewData["serviceUrl"] = HttpContext.Session.GetString("serviceUrl");
             ViewData["allFields"] = HttpContext.Session.GetString("allFields");
             ViewData["selectedState"] = HttpContext.Session.GetString("selectedState");
+            ViewData["identityMgr"] = HttpContext.Session.GetString("identityMgr");
             ViewData["Page"] = "Home";
             return View();
             /*
@@ -33,12 +34,26 @@ namespace RestLayerViewer.Controllers
 
         }
 
+        public IActionResult Clear()
+        {
+            //HttpContext.Session.Clear();
+            HttpContext.Session.SetString("allFields", "");
+            HttpContext.Session.SetString("selectedState", "");
+            HttpContext.Session.SetString("serviceUrl", "");
+            return RedirectToAction("Index");
+        }
         [HttpPost]
-        public IActionResult Index(string serviceUrl, string allFields, string selectedState)
+        public IActionResult Index(string serviceUrl, string allFields, string selectedState, string identityMgr)
         {
             HttpContext.Session.SetString("allFields", allFields);
             HttpContext.Session.SetString("selectedState", selectedState);
             HttpContext.Session.SetString("serviceUrl", serviceUrl);
+            if (identityMgr == null)
+            {
+                identityMgr = "";
+            } 
+            HttpContext.Session.SetString("identityMgr", identityMgr);
+
             //return Content($"Hello {serviceUrl}. Here iz yer fields: {fieldsListHidden}");
 
             return RedirectToAction("Data");
@@ -57,6 +72,7 @@ namespace RestLayerViewer.Controllers
             ViewData["serviceUrl"] = HttpContext.Session.GetString("serviceUrl");
             ViewData["allFields"] = HttpContext.Session.GetString("allFields");
             ViewData["selectedState"] = HttpContext.Session.GetString("selectedState");
+            ViewData["identityMgr"] = HttpContext.Session.GetString("identityMgr");
             return View();
         }
 
@@ -70,7 +86,16 @@ namespace RestLayerViewer.Controllers
             ViewData["serviceUrl"] = HttpContext.Session.GetString("serviceUrl");
             ViewData["allFields"] = HttpContext.Session.GetString("allFields");
             ViewData["selectedState"] = HttpContext.Session.GetString("selectedState");
+            ViewData["identityMgr"] = HttpContext.Session.GetString("identityMgr");
             ViewData["Page"] = "Data";
+            return View();
+        }
+
+        public IActionResult oauthcallback()
+        {
+            ViewData["serviceUrl"] = HttpContext.Session.GetString("serviceUrl");
+            ViewData["allFields"] = HttpContext.Session.GetString("allFields");
+            ViewData["selectedState"] = HttpContext.Session.GetString("selectedState");
             return View();
         }
 

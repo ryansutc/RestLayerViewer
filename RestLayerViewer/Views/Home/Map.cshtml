@@ -5,6 +5,7 @@
 
 <h2>View</h2>
 <p style="display:none" id="serviceUrlStore">@ViewData["serviceUrl"]</p>
+<p style="display:none" id="IdentityMgr">@ViewData["identityMgr"]</p>
 <p>ServiceUrl: @ViewData["serviceUrl"]</p>
 <p>Add a feature layer REST url to see data in this map.</p>
 
@@ -25,7 +26,7 @@
                 <ul class="cityname alt" style="vertical-align: bottom"></ul>
             </div>
         </div>
-      
+        <div><p id="errorMsg"></p></div>
 
     </section>
 </div>
