@@ -50,7 +50,7 @@
         _prevRecords: function (e) {
             //switch to prev page
             dojo.removeClass("NextRecords" + this.oid, "disabled");
-            if (this._idHigh == this.recordCount) {
+            if (this._idHigh === this.recordCount) {
                 this._idHigh = this._idLow - 1;
             }
             else {

@@ -41,25 +41,32 @@
         checkLoginStatus: function () {
             // registerOAuth must have been called first so we have a portalUrl
             // can we check if a user is logged in:
-            IdentityManager.checkSignInStatus(this.info.portalUrl + "/sharing")
-                .then((credential) => {
-                    portal = new Portal();
-                    portal.load();
-                    portal.when(function () {
+            return new Promise(function (resolve, reject) {
+                if (this.info === null) {
+                    this.registerOAuth();
+                }
+                IdentityMgr.checkSignInStatus(this.info.portalUrl + "/sharing")
+                    .then((credential) => {
+                        portal = new Portal();
+                        portal.authMode = "immediate";
+                        portal.load();
+                        portal.when(function () {
+                            this.portal = portal;
+                            resolve(true);
+                        });
+                        /*
+                        portalUser.when(function () {
+                            console.log(portalUser.fullName + "\n" + portalUser.orgId);
+                            console.log(PortalGroup);
+                        });
+                        */
 
-                        console.log(portal);
+                    })
+                    .catch(function (err) {
+                        console.log(err);
+                        reject(false);
                     });
-                    /*
-                    portalUser.when(function () {
-                        console.log(portalUser.fullName + "\n" + portalUser.orgId);
-                        console.log(PortalGroup);
-                    });
-                    */
-
-                })
-                .catch(function (err) {
-                    console.log(err);
-                });
+            }.bind(this));
         },
 
         reinitialize: function (stringIdentityMgr) {
@@ -68,7 +75,7 @@
             IdentityMgr.initialize(JSON.parse(stringIdentityMgr));
         },
 
-        registerOAuth: function (oAuthJSON) {
+        registerOAuth: function () {
 
             // If we don't have an appID, so what? We just get access to everything?
             // https://developers.arcgis.com/documentation/core-concepts/security-and-authentication/accessing-arcgis-online-services/

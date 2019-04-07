@@ -47,15 +47,21 @@ $(document).ready(function () {
             'listmgr/listmgr',
             'listmgr/listModalWidget',
             "map/featureLayerInfo",
-            "auth/authHelp"
-        ], function (parser, fieldmgr, listModalWidget, featureLayerInfo, authHelp) {
+            "auth/authHelp",
+            "signin/signInWidget"
+        ], function (parser, fieldmgr, listModalWidget, featureLayerInfo, authHelp, signInWidget) {
+
             var myAuth = new authHelp();
-            myAuth.registerOAuth(); // TEST
+            myAuth.registerOAuth(); 
+            if (identityMgr) {
+                myAuth.reinitialize(identityMgr);
+            }
             parser.parse(); // Let page load first.
-            var userCredsArea = $('#usercredsarea');
+
             var serviceUrlTextBox = $('#serviceUrl');
             var allFieldsTextBox = $("#allFields");
             var selectedStateTextBox = $("#selectedState");
+            var showDataBtn = $("#showDataBtn");
 
             var myfieldModalWidget = new listModalWidget({
                 title: 'Add/Remove Fields from Display',
@@ -64,49 +70,77 @@ $(document).ready(function () {
 
             var myFLInfo = null; //FeatureLayerInfo. 
 
-            if (serviceUrl && serviceUrl != "") {
+            if (serviceUrl && serviceUrl !== "") {
                 // restore existing state:
                 myfieldModalWidget.listmgr = new fieldmgr(allFieldsString.split(","), selectedStateString.split(","));
 
                 populateFormFromFieldList(myfieldModalWidget.listmgr);
 
-                $('#showDataBtn').prop('disabled', false);
-                $('#fieldsGroup').show();
+                showDataBtn.prop('disabled', false);
+                $('#fieldsGroup').show(); //???
                 serviceUrlTextBox.prop("disabled", true);
-                $("#showDataBtn").text("Clear Data");
-                $('#showDataBtn').removeAttr("type").attr("type", "reset");
-                $("#showDataBtn").click(function (event) {
-                    serviceUrlTextBox.val("");
-                    serviceUrlTextBox.text("");
-                    allFieldsTextBox.val("");
-                    allFieldsTextBox.text("");
-                    selectedStateTextBox.val("");
-                    selectedStateTextBox.text("");
-                    
-                    //event.preventDefault;
+                showDataBtn.text("Clear Data");
+                showDataBtn.removeAttr("type").attr("type", "reset");
+                showDataBtn.click(function (event) {
                     window.location.replace("home/clear");
-                    //window.location.reload();
                 });
             }
             else {
                 $('.pageLink').hide();
             }
-            $('#signinAGOL').click(function () {
-                myAuth.signIn();
-                myAuth.portal.when(function () {
-                    $("#username").html(myAuth.portal.user.username + " <a href='no-javascript.html' title='sign out' id='signout'>(sign out)</a>");
-                    $("#userinfo").html(myAuth.portal.user.fullName + "<br/>" + myAuth.portal.name);
-                    userCredsArea.show();
-                    fetchServiceUrlInfo();
 
-                    console.log("Identity Manager: \n" + myAuth.IdentityMgrToJSON());
-                    var IdentityMgr = $("#identityMgr");
-                    IdentityMgr.val(myAuth.OAuthInfoToJSON());
+            var IdentityMgrElem = $("#identityMgr");
+            var signInAction = function () {
+                
+                fetchServiceUrlInfo();
+                IdentityMgrElem.val(myAuth.OAuthInfoToJSON());
+                // we want to fire an ajax request to pass
+                // the identityMgr JSON to our server to store it
+                // in a session so that even if the user refreshes the 
+                // page the information will still be kept.
+                console.log(window.location.href);
+                fetch(window.location.href + "home/saveAuthInfo", {
+                    method: 'post',
+                    headers: {
+                        'Accept': 'application/json, text/plain, */*',
+                        'Content-type': 'application/json'
+                    },
+                    body: myAuth.OAuthInfoToJSON()
+                })
+                    .then(() => console.log("sent!"))
+                    .catch((err) => {
+                        console.log(err);
+                    });
+            };
+            var signOutAction = function () {
 
-                    //TEST lets see if we can reinitialize:
-                    myAuth.reinitialize(myAuth.OAuthInfoToJSON());
-                });
-            });
+                IdentityMgrElem.val("");
+                // we want to fire an ajax request to remove
+                // the identityMgr JSON from our server session variable to eliminate it there as well
+                console.log(window.location.href);
+                fetch(window.location.href + "home/saveAuthInfo", {
+                    method: 'post',
+                    headers: {
+                        'Accept': 'application/json, text/plain, */*',
+                        'Content-type': 'application/json'
+                    },
+                    body: '{}'
+                })
+                    .then(() => console.log("sent!"))
+                    .catch((err) => {
+                        console.log(err);
+                    });
+            };
+            
+            var mySignInWidget = new signInWidget({
+                authHelper: myAuth,
+                onSignedInEvent: signInAction, //this is what we want to run on our page after a user signs in. Handles ASP CORE server side stuff
+                onSignedOutEvent: signOutAction, //this is what we want to run after a user signs out. Handles ASP CORE server side stuff
+                identityElementId: "identityMgr"
+            }, "login");
+            if (identityMgr) {
+                mySignInWidget.signInOut(null);
+            }
 
             $("body").on("click", "#signout", function (event) {
                 event.preventDefault();

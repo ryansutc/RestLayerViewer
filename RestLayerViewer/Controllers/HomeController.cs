@@ -42,6 +42,7 @@ namespace RestLayerViewer.Controllers
             HttpContext.Session.SetString("serviceUrl", "");
             return RedirectToAction("Index");
         }
+
         [HttpPost]
         public IActionResult Index(string serviceUrl, string allFields, string selectedState, string identityMgr)
         {
@@ -53,8 +54,6 @@ namespace RestLayerViewer.Controllers
                 identityMgr = "";
             } 
             HttpContext.Session.SetString("identityMgr", identityMgr);
-
-            //return Content($"Hello {serviceUrl}. Here iz yer fields: {fieldsListHidden}");
 
             return RedirectToAction("Data");
         }
@@ -93,12 +92,29 @@ namespace RestLayerViewer.Controllers
 
         public IActionResult oauthcallback()
         {
+
             ViewData["serviceUrl"] = HttpContext.Session.GetString("serviceUrl");
             ViewData["allFields"] = HttpContext.Session.GetString("allFields");
             ViewData["selectedState"] = HttpContext.Session.GetString("selectedState");
             return View();
         }
 
+        /// <summary>
+        /// Save the identity manager object server side.
+        /// https://stackoverflow.com/questions/13041808/mvc-controller-get-json-object-from-http-body
+        /// </summary>
+        public void saveAuthInfo([FromBody] string data)
+        {
+            System.IO.Stream req = Request.Body;
+            req.Seek(0, System.IO.SeekOrigin.Begin);
+            string json = new System.IO.StreamReader(req).ReadToEnd();
+            if(json == "{}")
+            {
+                json = "";
+            }
+            HttpContext.Session.SetString("identityMgr", json);
+            return;
+        }
         private List<string> _fieldsStringToList(string fieldsString)
         {
             List<string> list = fieldsString.Split(",")
