@@ -8,8 +8,8 @@
  */
 function populateFormFromFieldList(fldmgr) {
     $('#selectedFields').text(fldmgr.getSelectedItemsAsText());
-    $('#allFields').val(fldmgr.getAllItemsAsText());
-    $('#selectedState').val(fldmgr.getSelectedStateAsText());
+    $('#allFields').val(fldmgr.getAllItems().toString());
+    $('#selectedState').val(fldmgr.getSelectedState().toString());
 
 }
 

@@ -30,7 +30,7 @@ define([
             getSelectedItems: function () {
                 var selItems = [];
                 for (var i in this.listObj) {
-                    if (this.listObj[i] == 1) {
+                    if (this.listObj[i] === 1) {
                         selItems.push(i);
                     }
                 }
@@ -45,19 +45,29 @@ define([
                 return selState;
             },
 
-            getAllItemsAsText: function () {
-                return this.getAllItems().toString();
+            getAllItemsAsText: function (spacer) {
+                if (!spacer) {
+                    spacer = " ";
+                }
+                var s = "";
+                var allItems = this.getAllItems();
+                for (var i in allItems) {
+                    s += allItems[i] + spacer;
+                }
+                return s;
             },
 
-            getSelectedItemsAsText: function () {
-                return this.getSelectedItems().toString();
+            getSelectedItemsAsText: function (spacer) {
+                if (!spacer) {
+                    spacer = " ";
+                }
+                var s = "";
+                var selItems = this.getSelectedItems();
+                for (var i in selItems) {
+                    s += selItems[i] + spacer;
+                }
+                return s;
             },
-
-            getSelectedStateAsText: function () {
-                return this.getSelectedState().toString();
-            }
-
-
 
         })
 });
