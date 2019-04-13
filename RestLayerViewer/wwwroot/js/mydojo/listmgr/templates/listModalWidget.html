@@ -6,13 +6,24 @@
                 <h4 class="modal-title">${title}</h4>
                 <p>${msg}</p>
             </div>
-            <div class="modal-body" id="content-wrapper" data-dojo-attach-event="ondijitclick:_onGo">
+            <div class="modal-body" id="content-wrapper">
                 <div class="contentModalWidget">
-                    <div id="includeItems${oid}" data-dojo-attach-point="includeItems" class="includeItems" 
-                         data-dojo-attach-event="ondijitclick:_fldKeywordClick"></div>
-                    <div id="excludeItems${oid}" data-dojo-attach-point="excludeItems" class="excludeItems" 
-                         data-dojo-attach-event="ondijitclick:_fldKeywordClick"></div>
+                    <div id="includeItems${oid}"  class="includeItems">
+                        <p><a id="includeAll" data-dojo-attach-event="ondijitclick:_includeAll">Include All </a></p>
+                        <div data-dojo-attach-point="includeItems" data-dojo-attach-event="ondijitclick:_fldKeywordClick">
+                            <!-- field names go here -->
+                        </div>
+                    </div>
+                    <div id="excludeItems${oid}" class="excludeItems">
+                        <p><a id="excludeAll"  data-dojo-attach-event="ondijitclick:_excludeAll">Exclude All </a></p>
+                        <div data-dojo-attach-point="excludeItems" data-dojo-attach-event="ondijitclick:_fldKeywordClick">
+                            <!-- field names go here -->
+                        </div>
+                    </div>
                 </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default close" data-dismiss="modal" data-dojo-attach-event="ondijitclick:_close">Close</button>
             </div>
         </div>
     </div>

@@ -59,14 +59,26 @@ $(document).ready(function () {
             parser.parse(); // Let page load first.
 
             var serviceUrlTextBox = $('#serviceUrl');
-            var allFieldsTextBox = $("#allFields");
-            var selectedStateTextBox = $("#selectedState");
             var showDataBtn = $("#showDataBtn");
+            var clearDataBtn = $("#clearDataBtn");
+            clearDataBtn.click(function (event) {
+                window.location.replace("home/clear");
+            });
 
             var myfieldModalWidget = new listModalWidget({
                 title: 'Add/Remove Fields from Display',
                 msg: 'will show only included fields here'
             }, 'listModalWidget');
+
+            // handle modal popup close
+            var modalFieldCloseEvent = function (event) {
+
+                populateFormFromFieldList(myfieldModalWidget.listmgr);
+                hideError("filterFieldsError");
+                $('#showDataBtn').prop('disabled', false);
+                
+            }.bind(this);
+            myfieldModalWidget.closeEvent = modalFieldCloseEvent;
 
             var myFLInfo = null; //FeatureLayerInfo. 
 
@@ -77,13 +89,11 @@ $(document).ready(function () {
                 populateFormFromFieldList(myfieldModalWidget.listmgr);
 
                 showDataBtn.prop('disabled', false);
-                $('#fieldsGroup').show(); //???
-                serviceUrlTextBox.prop("disabled", true);
-                showDataBtn.text("Clear Data");
-                showDataBtn.removeAttr("type").attr("type", "reset");
-                showDataBtn.click(function (event) {
-                    window.location.replace("home/clear");
-                });
+                clearDataBtn.prop('disabled', false);
+                $('#fieldsGroup').show(); // show fields list
+                serviceUrlTextBox.prop("readonly", true);
+                showDataBtn.text("Update Data");
+                
             }
             else {
                 $('.pageLink').hide();
@@ -156,20 +166,6 @@ $(document).ready(function () {
                 myfieldModalWidget.show();
             });
 
-            // handle modal popup close
-            $('#modalFieldclose').click(function (event) {
-                var includedFieldCount = myfieldModalWidget.listmgr.getSelectedItems().length;
-                if (includedFieldCount === 0) {
-                    addError("You must include at least 1 field", "filterFieldsError");
-                    $('#showDataBtn').prop('disabled', true);
-                }
-                else {
-                    populateFormFromFieldList(myfieldModalWidget.listmgr);
-                    hideError("filterFieldsError");
-                    $('#showDataBtn').prop('disabled', false);
-                }
-            });
-
             $('#serviceUrl').focusout(function (event) {
                 fetchServiceUrlInfo(event);
             });
@@ -196,13 +192,13 @@ $(document).ready(function () {
                     $("#fieldsGroup").show();
                     $('#showDataBtn').prop('disabled', false);
                     
-
                     $('#coordName').text("wkid:" + myFLInfo.getProj(data).toString());
                     $('#coordInfo').attr("href", "//spatialreference.org/ref/epsg/" + myFLInfo.getProj(data) + "/html/");
                     $('#capabilities').text(myFLInfo.getCapabilities(data));
                     if (myFLInfo.getType(data) !== "Feature Layer") {
                         addError("Warning: this does not appear to be a Feature Layer. Might not be able to render.", errorElementId);
                     }
+                    clearDataBtn.prop('disabled', false);
                 }).catch((err) => {
 
                     addError(err, errorElementId);
